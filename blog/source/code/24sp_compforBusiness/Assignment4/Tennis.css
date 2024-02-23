@@ -1,0 +1,102 @@
+body {
+    font-family: 'Times New Roman', Times, serif;
+    margin-top: 1vw;
+    margin-left: 1vw;
+    margin-right: 1vw;
+    background: #70AF30;
+}
+
+img {
+    width: 100%;
+    display: flex;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+td {
+    vertical-align: top;
+}
+
+h1 {
+    text-align: center;
+}
+
+h2 {
+    text-align: center;
+}
+
+.footnote,
+.ranking-table th,
+.ranking-table td {
+    font-style: italic;
+}
+
+a {
+    text-decoration: none;
+    color: #3F4536;
+}
+
+.href-table tr th {
+    border-top: 1px solid #808080;
+    border-left: 1px solid #808080;
+    border-right: 1px solid #2C2C2C;
+    border-bottom: 1px solid #2C2C2C;
+}
+
+.href-table {
+    border-top: 3px solid #808080;
+    border-left: 3px solid #808080;
+    border-right: 3px solid #2C2C2C;
+    border-bottom: 3px solid #2C2C2C;
+    width: 100%;
+}
+
+.double-img,
+.single-img {
+    margin-top: 2vw;
+    width: 100%;
+}
+
+.ranking-table {
+    border: 3px solid black;
+}
+
+.ranking-table th,
+.ranking-table td {
+    border: 3px solid black;
+}
+
+.nav-bar {
+    background-color: #556B2F;
+    display: flex;
+    justify-content: center;
+}
+
+.nav-item {
+    display: inline-block;
+    padding: 15px;
+    text-align: center;
+}
+
+.nav-item.home {
+    margin-right: auto;
+}
+
+.mixed-img {
+    margin-top: 2vw;
+    width: 100%;
+}
+
+.rules-container {
+    display: flex;
+    margin-top: 3vw;
+    margin-bottom: 3vw;
+    margin-left: 3vw;
+    margin-right: 3vw;
+    background-color: #D3D3D3;
+    border-top: 15px solid #A9A9A9;
+    border-left: 15px solid #A9A9A9;
+    border-right: 15px solid #A9A9A9;
+    border-bottom: 15px solid #A9A9A9;
+    text-align: center;
+}

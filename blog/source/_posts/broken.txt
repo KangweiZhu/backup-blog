@@ -1,0 +1,206 @@
+### 6.2 如何虚拟化Memory
+
+> 问题：如何同时运行多个进程
+
+我们知道进程中的addressess是硬编码进进程的binary里的。然而，因为进程已经产生了自己独享memory的错觉，当多个进程同时运行时，很有可能出现**多个进程试图操作同一内存区域**的问题。
+
+解决这些问题的方法有：
+
+1. Time Sharing
+2. Static Relocation
+3. Base
+4. Base+Bounds
+5. Segmentation
+
+### 6.3 Time Sharing of Memory
+
+> 属于比较少见的做法，甚至概念也很少提及
+
+OS通过在进程不在运行时，将CPU registers放入memory，给了进程一种有很多虚拟cpu的幻觉
+同样，我们也可以在进程不在运行的时候，把内存放进磁盘。这样进程就会感觉独占memory。
+
+但是，我们知道Disk I/O是一个非常费时、低效的过程。所以这个法子性能非常差
+
+### 6.4 Space Sharing - Statis Relocation
+
+> 比Time Sharing会好一点
+
+OS在进程加载进内存之前，重写每个程序，这样子不同的进程就会使用不同的地址和指针了。
+
+但是没有保护，可能会出现地址出问题的情况，进而：
+1.破坏OS
+2.破坏其他进程
+3.并且会产生虚有的IO
+4.没有隐私
+5.一旦分配地址之后，就不能移动地址了。从而不能够allocate new proceess
+
+
+### 6.5 Space Sharing - Dynamic Relocation
+
+> Goal： Protect processes from one another
+
+Require hardware support
+    * Memory Management Unit (MMU)
+
+MMU会在每个内存引用处动态地改变进程的地址
+    * 进程生成逻辑（虚拟）地址，交给MMU
+    * MMu 将其转换成物理（真实）地址，存入内存
+
+![Alt text](image-5.png)
+
+MMU两种运行模式：
+
+* Priviledged: 
+          1.有OS运行
+          2.可以操作MMU中内容和
+          3.一般是通过trap、system call来运行
+      
+
+* User mode：
+  * 主要是为了translate 虚拟地址到物理地址
+
+MMU为了转移，有base register。
+base: start location for address space
+
+![](image-6.png)
+
+可以注意到user mode 里面，往logical address上面加了base。
+个人理解： 是为了限制user，只能访问base上面的地址。
+
+
+#### 6.5.1 Dynamic Relocation with Base Register
+
+Idea: 在虚拟内存转换成物理内存的过程中，设一个偏移量。
+将这个偏移量存在base register上。
+每个进程的偏移量都不一样。
+
+
+#### 6.5.2 Base Register + Bound
+
+> 单凭Base Register, 如果一个线程不停的往上/下 加减他的memory address，那么总有一天，他会和别的进程的memory space发生碰撞。这样一来，protection又没了
+
+* Bound register： size of this process's virtual address space
+  * 有时候会是 base + size （一个进程最大的物理地址）
+
+OS will kill the process if process loads/stores beyond bounds
+
+Tips:
+Register中包含
+    1. base 32bit 
+        2. bound 32bit
+        3. mode 1bit
+
+判定流程
+![Alt text](image-7.png)
+
+Interrupt示例
+![Alt text](image-8.png)
+
+#### 6.5.3 Base + Bound时对进程的管理
+
+> 谈到进程管理，主要涉及到的时上下文切换（context-switch）
+> 当执行上下文切换的时候，我们要将Base & Bound Register 添加到 Process Control Block中的 context中
+
+* 步骤
+  * Change Privileged mode
+  * save base & bound registers of old process
+  * load base & bound registers of new process
+  * Change to user mode to jumo to new process
+
+从上面的步骤，我们可以看出，user process不能操作base & bound registers，并且也不能切换到Privileged mode
+
+
+#### 6.5.4 Base + Bound + Dynamic Relocation 的好处：
+
+1. Provides protection (both read and write) across address spaces
+2. Supports dynamic relocation
+   * Can place addresses places initally at locations different from assumed in the memory
+   * Can move addresses spaces if needed
+3. Simple, inexpensive implementation
+4. Fast
+   * add and compare in parallel
+
+#### 6.5.5 Base + Bound + Dynamic Relocation 的坏处：
+
+    * 每个进程都必须连续地分配在物理内存中
+    * 必须得分配一些不能被process用到的内存。
+    * No Paritial Sharing.(Implication of isolation)
+
+### 6.6 Segmentation Addressing（分段寻址）
+
+> Base and Bound 的加强版
+> 将地址空间分割成若干个逻辑块， 每个逻辑块对应地址空间中的逻辑实体
+
+  * code， heap， stack
+    特性：
+
+    1. 每个实体都可以placed seperately on the physical address
+    2. 每个实体都可以扩展和伸缩
+    3. 每个实体都受到了保护（seperate read/write/exec bits）
+
+
+
+> 在操作系统（OS）中，分段寻址（Segment Addressing）是一种内存管理的方法，其中内存被划分为多个不同大小的段（segments），每个段用于存储特定类型的数据或执行特定的任务。每个段都有一个唯一的标识符，称为段描述符，它包含有关段的信息，例如起始地址、段的大小和访问权限等。
+>
+> 以下是关于操作系统中分段寻址的解释：
+>
+> 段描述符：
+> 在分段寻址中，每个段都由一个段描述符表示。段描述符存储了与段相关的信息，如起始地址、段的大小、访问权限、以及其他控制信息。这些描述符通常存储在特殊的表中，例如全局描述符表（Global Descriptor Table，GDT）或局部描述符表（Local Descriptor Table，LDT）。
+>
+> 逻辑地址：
+> 逻辑地址由两个部分组成：段选择器和偏移量。段选择器用于选择段描述符，而偏移量表示从选定段的起始地址开始的位置。通过组合这两部分，可以构成完整的逻辑地址。
+>
+> 段寻址过程：
+> 当程序引用一个逻辑地址时，操作系统通过分段寻址来确定对应的物理地址。首先，根据逻辑地址中的段选择器，操作系统找到相应的段描述符。然后，使用段描述符中的起始地址和逻辑地址中的偏移量来计算物理地址。
+>
+> 优势：
+> 分段寻址的主要优势之一是可以更灵活地管理内存，因为不同的段可以有不同的大小和访问权限。这有助于更好地组织和保护内存中的数据和代码。
+>
+> 保护机制：
+>
+> 通过分段寻址，可以实现内存保护机制。每个段描述符都包含有关访问权限的信息，如读、写、执行权限。这样，操作系统可以确保程序只能访问其具有权限的段。
+>
+> 虚拟内存：
+> 分段寻址也有助于实现虚拟内存。不同的段可以映射到物理内存的不同区域，而不同的程序可以共享相同的段，使得虚拟内存的管理更加灵活。
+>
+> 需要注意的是，现代操作系统通常采用更先进的内存管理机制，如分页寻址（Paging），而不仅仅是分段寻址。这些机制可以更好地支持虚拟内存、内存共享和更高级的内存保护。
+
+#### Segmentation Addressing的缺点
+
+* Fragmentation，太多scattered的segment
+
+  
+
+
+### 6.7 Paging
+
+> 前面说过，分段寻址的问题在于fragmentation太多。我们的目标就是**降低对于连续空间的要求**
+
+* reduce external fragmentation
+* grow segment as needed
+
+思路：我们可以将address space和physical memory分成固定大小的page
+
+* Size 2^n， e.g. 4kb 8kb 16kb  etc..
+* Physical Page: page frame
+
+一些计算题公式
+
+1. 已知number of bits for vpn（virtual page number）， 问多少virtual page？
+
+> 2^number of bits for vpn
+
+2. 已知bits in virtual address and bits for offset, 问virtual page number有多少bits？
+
+> bits in virtual address - bits for offset
+
+3. 已知Page Size， 问offset需要多少bits？
+
+> log2(page_size)
+
+![Alt text](image-9.png)
+
+![Alt text](image-10.png)
+
+![Alt text](image-11.png)
+
